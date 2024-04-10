@@ -1,0 +1,232 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import random
+
+#v = input("enter your essential/desired volume") #####
+
+
+inc = input("enter income")
+pn = input("price of normal")
+pi = input("price of inferior")
+v = input("desired value")
+
+
+inc = int(inc)
+pn = int(pn)
+pi = int(pi)
+v = int(v)
+
+l =[]
+
+if inc <= pi*v:     #if the income is unable to meet the required volume even on relying fully on inferior rice
+    for n in range(int(inc/pi)+1):
+       i = (inc - pn*n)/pi
+       l.append([n,i])
+else :print("na")
+
+l = pd.DataFrame(l)   #first column has the normal goods amount and the second column the inferior goods amount
+
+print(l)
+
+
+states = pd.read_excel(r"C:\Users\pacha\OneDrive\Documents\few states expend on cereals per month.xlsx")  #the data is from NSS
+
+# a few states were selected trying to cover the various regions of the country
+
+states = pd.DataFrame(data=states)
+#print(states)
+
+ap = np.array([states.loc[:,'Unnamed: 1'], states.loc[:,'Unnamed: 2'], states.loc[:,'Unnamed: 3']])
+asm = np.array([states.loc[:,'Unnamed: 5'], states.loc[:,'Unnamed: 6'], states.loc[:,'Unnamed: 7']])
+guj = np.array([states.loc[:,'Unnamed: 9'], states.loc[:,'Unnamed: 10'], states.loc[:,'Unnamed: 11']])
+har = np.array([states.loc[:,'Unnamed: 13'], states.loc[:,'Unnamed: 14'], states.loc[:,'Unnamed: 15']])
+kar = np.array([states.loc[:,'Unnamed: 17'], states.loc[:,'Unnamed: 18'], states.loc[:,'Unnamed: 19']])
+mp = np.array([states.loc[:,'Unnamed: 21'], states.loc[:,'Unnamed: 22'], states.loc[:,'Unnamed: 23']])
+ods = np.array([states.loc[:,'Unnamed: 25'], states.loc[:,'Unnamed: 26'], states.loc[:,'Unnamed: 27']])
+up = np.array([states.loc[:,'Unnamed: 29'], states.loc[:,'Unnamed: 30'], states.loc[:,'Unnamed: 31']])
+
+
+
+r = random.sample(range(1000),100)
+d = random.sample(range(100),100)
+
+ran = np.block([r,d])
+
+ran = pd.DataFrame(ran)
+
+c= ran.loc[1,:]
+
+#print(ran.loc[0,:])
+
+m = np.mean(c)
+
+sd = np.std(c)
+
+fu = []
+co =[]
+
+for i in c:
+    f = 2.718**((-0.5)*((c-m)/sd)**2)
+    fu.append(f)
+    co.append(c)
+
+print(fu)
+new = np.block([fu,co])
+
+new = pd.DataFrame(new)
+
+
+#print(co)
+#plt.bar(co.loc[1,:],co.loc[0,:])
+#plt.scatter(new.loc[1,:],new.loc[0,:]) #this is the prior distribution we will have to update this based on data we receive
+#plt.xlabel("spending on food")
+#plt.ylabel("probability")
+#plt.show()
+
+# total houses in state i with n ranges are h_i1, h_i2, h_i3, ...., h_in
+
+# p(income range) = h_i
+
+hh = 0
+for i in range(12):
+    hh = asm[1,i] + ap[1,i] + ods[1,i] + up[1,i] + guj[1,i] + har[1,i] + kar[1,i] + mp[1,i] + hh
+
+print("total households :",hh)
+
+hm = np.vstack([asm[1,:],ap[1,:],ods[1,:],up[1,:],guj[1,:],har[1,:],kar[1,:],mp[1,:]])
+print("the household income matrix:",hm)
+
+exp = np.vstack([asm[2,:],ap[2,:],ods[2,:],up[2,:],guj[2,:],har[2,:],kar[2,:],mp[2,:]])
+#print("the expenditure matrix:",exp)
+#exp = pd.DataFrame(exp)
+#print(exp)
+
+#plt.scatter([0,1,2,3,4,5,6,7,8,9,10,11],exp.loc[0,:])
+#plt.show()
+
+
+p = 0
+d = 0
+inc =[]
+inchh=[]
+
+for j in range(12):
+    d=0
+    for i in range(8):
+        d = hm[i,j] + d
+
+    inchh.append(d) # each of the terms d are the number of households in an income level for all states combined.
+
+inchh = np.array(inchh)
+
+#print("by income levels households:", inchh)
+
+
+
+w = []
+wm =0
+
+for j in range(12):
+    p =0
+    wm=0
+    for i in range(8):
+
+
+        p = hm[i,j]/hh + p
+        wm = (hm[i,j]*exp[i,j])/inchh[j] + wm
+
+    inc.append(p)  # each p value gives relative number of households in a particular income level
+    w.append(wm)  # each wm represents the weighted mean of the expenditure at a particular income level
+
+inc = np.array(inc)
+#print(w)
+
+# x data points
+x =[32.5,72.5,87.5,102.5,117.5,132.5,150,170,197.5,247.5,332.5,395]           # the centres of the income ranges
+#plt.bar(x,w,width=[60,10,10,10,10,10,15,15,30,60,100,15],align='center')
+#plt.xticks(ticks=[0,65,80,95,110,125,140,160,180,215,280,385])
+#plt.scatter(x,w)                                                             # while plotting the graph we are considering the expenditure values to represent centre of the ranges
+#plt.xlabel("income ranges")
+#plt.ylabel("expenditure on cereals")
+#plt.yticks(ticks=[23.24,30.8,34.6,37.3,39,41,43.3,45.3,47.3,51.7,63])
+
+limits=[0,65,80,95,110,125,140,160,180,215,280,385]  # the income range boundaries
+
+fit1 = np.polyfit(x,w,deg=3)
+#print(fit1)
+
+f=[]
+fx = []
+
+for i in x:
+    y = 2.21e-6*(i**3) -1.52e-03*(i**2) +3.84e-01*(i) +11.476
+    f.append(y)
+
+for i in limits:
+    ynew = 2.21e-6*(i**3) -1.52e-03*(i**2) +3.84e-01*(i) +11.476
+    fx.append(ynew)                  # using the polynomial approximated to the data to calculate expenditure at the end points of the ranges
+
+fx = np.array(fx)
+
+px =[]
+
+y = input("the amount x invested")
+
+y = int(y)
+
+for i in range(11):
+    if fx[i]<=y<=fx[i+1]:
+        px.append(inc[i])
+        j=i
+    else:                     # by taking the expenditure as input, if it lies in a particular range as defined previously, we take probability of that amount invested as the corresponding p value
+        continue
+
+print("probability of x invested:",px)
+
+#print(x)
+
+#print(x)
+#plt.plot(x,f)
+
+#plt.show()
+#print("probability of income ranges:",inc)
+
+f = np.array(f)
+
+post=[]
+
+#print(fu[5])
+#print(inc[j])
+for j in range(12):
+ po = (fu[j]*px)/inc[j]  # trying to update the prior probability using bayes theorem
+ post.append(po)
+
+post = np.array(post)
+
+
+#post = pd.DataFrame(post)
+
+x=[]
+for i in range(100):
+    x.append(i)
+
+x= np.array([x])
+plt.plot(x,post)
+plt.show()
+
+import sklearn
+
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+from sklearn.model_selection import train_test_split
+
+estimator = LinearDiscriminantAnalysis(shrinkage=None)
+
+
+x_train,x_test,y_train,y_test = train_test_split(x,wm,test_size=0.3)
+
+estimator.fit(x_train,y_train)
+
+y_pred = estimator.predict(x_test)
+
+print(estimator.score(x_test,y_test))
